@@ -1,56 +1,87 @@
 # Dados:
-# Treino: 39209
-# Teste: 12631
+# Train samples    : 37919
+# Validation samples :  1290
 
-import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
 
-# 1 - Carregar os dados
+
+# 1 - Load and process the data
 train_path = './GTSRB/Training'
-validate_path = './GTSRB/Test'
+validate_path = './GTSRB/Validation'
 
-train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rotation_range=40, 
-                                                                zoom_range=0.2, 
-                                                                width_shift_range=0.2, 
-                                                                height_shift_range=0.2,
-                                                                shear_range=0.2, 
-                                                                rescale=1./255)
+train_datagen = keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
-validate_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
+validate_datagen = keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
-
-# 2 - Processar os dados
 train_generator = train_datagen.flow_from_directory(train_path, 
-                                  target_size=(30, 30), 
-                                  batch_size=76,
+                                  target_size=(64, 64), 
+                                  batch_size=74,
                                   class_mode='categorical')
 
 validation_generator = validate_datagen.flow_from_directory(validate_path, 
-                                     target_size=(30, 30), 
-                                     batch_size=76,
+                                     target_size=(64, 64), 
+                                     batch_size=40,
                                      class_mode='categorical')
 
 
-# 3 - Construir o modelo
-model = tf.keras.models.Sequential([
-    tf.keras.layers.Conv2D(32, (3, 3), activation='relu',input_shape=(30, 30, 3)),
-    tf.keras.layers.MaxPool2D((2, 2)),
-    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
-    tf.keras.layers.MaxPool2D((3, 3)),
-    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
-    tf.keras.layers.MaxPool2D((2, 2)),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(512, activation='relu'),
-    tf.keras.layers.Dense(43, activation='softmax')
+# 2 - Build the model
+model = keras.models.Sequential([
+    layers.Conv2D(32, (3, 3), activation='relu',input_shape=(64, 64, 3)),
+    layers.Conv2D(32, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D((3, 3)),
+    layers.Dropout(0.3),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Dropout(0.3),
+    layers.Flatten(),
+    layers.Dense(512, activation='relu'),
+    layers.Dropout(0.5),
+    layers.Dense(43, activation='softmax')
 ])
 
 
-# 4 - Compilar o modelo
-model.compile(optimizer='RMSprop',
+# 3 - Compile the model
+model.compile(optimizer='adam',
               loss='categorical_crossentropy',
               metrics=['acc'])
 
 
-# 5 - Treinar e Validar o modelo
-history = model.fit_generator(train_generator, steps_per_epoch=512, epochs=20)
+# 4 - Train and evaluate the model
+history = model.fit_generator(
+    train_generator,
+    steps_per_epoch=512,
+    epochs=8,
+    validation_data=validation_generator, 
+    validation_steps=32)
 
-# 6 - Testar o modelo
+model.save('gtsrb_model.h5')
+
+# 5 - Analyze the data
+import matplotlib.pyplot as plt
+
+
+acc = history.history['acc']
+val_acc = history.history['val_acc']
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+epochs = range(1, len(acc) + 1)
+
+plt.plot(epochs, acc, 'bo', label='Training acc')
+plt.plot(epochs, val_acc, 'b', label='Validation acc')
+plt.title('Training and validation accuracy')
+plt.legend()
+
+plt.figure()
+
+plt.plot(epochs, loss, 'bo', label='Training loss')
+plt.plot(epochs, val_loss, 'b', label='Validation loss')
+plt.title('Training and validation loss')
+plt.legend()
+
+plt.show()

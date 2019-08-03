@@ -19,7 +19,7 @@
   <h3 align="center">A Machine Learning model that classifies german traffic signs</h3>
 
   <p align="center">
-    A CNN based model constructed using tensorflow 2.0 and Keras. That can detect german traffic signs. 
+    A CNN based model constructed using tensorflow 2.0 and Keras that can detect german traffic signs. 
     <br />
     ·
     <a href="https://github.com/dario-santos/CNN-Machine-Learning-Model/issues">Report a Bug</a>
